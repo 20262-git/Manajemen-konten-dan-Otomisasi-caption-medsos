@@ -19,6 +19,7 @@ class CaptionController extends Controller
 
         $prompt = $this->buildPrompt($request);
 
+<<<<<<< HEAD
         try {
             $response = Http::withHeaders([
                 'x-goog-api-key' => env('GEMINI_API_KEY'),
@@ -37,6 +38,63 @@ class CaptionController extends Controller
 
             $caption = $response->json('candidates.0.content.parts.0.text') 
                        ?? "❌ Gemini API tidak dapat menghasilkan caption.";
+=======
+        $apiKey = env('GEMINI_API_KEY');
+        if (empty($apiKey)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'GEMINI_API_KEY belum dikonfigurasi.'
+            ], 500);
+        }
+
+        $endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+        try {
+            $client = Http::timeout(10);
+
+            // If API key looks like a Google API key (starts with "AIza"), send it as query param.
+            if (str_starts_with($apiKey, 'AIza')) {
+                $endpoint .= '?key=' . urlencode($apiKey);
+                $response = $client->post($endpoint, [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]]
+                    ],
+                    'generationConfig' => [
+                        'temperature' => 0.8,
+                        'maxOutputTokens' => 1000,
+                    ]
+                ]);
+            } else {
+                // Otherwise try using Bearer token (for service account/OAuth tokens)
+                $response = $client->withToken($apiKey)->post($endpoint, [
+                    'contents' => [
+                        ['parts' => [['text' => $prompt]]]
+                    ],
+                    'generationConfig' => [
+                        'temperature' => 0.8,
+                        'maxOutputTokens' => 1000,
+                    ]
+                ]);
+            }
+
+            if ($response->failed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Permintaan API gagal.',
+                    'details' => $response->body()
+                ], $response->status() ?: 500);
+            }
+
+            // Try a couple of common response paths and fall back to raw body.
+            $caption = $response->json('candidates.0.content.parts.0.text')
+                    ?? $response->json('candidates.0.content.0.parts.0.text')
+                    ?? $response->json('candidates.0.result')
+                    ?? $response->body();
+
+            $caption = is_string($caption) && trim($caption) !== ''
+                ? $caption
+                : 'Maaf, gagal generate caption. Coba lagi nanti.';
+>>>>>>> 46d43db (ripal - update kodingan terbaru)
 
             return response()->json([
                 'success' => true,
