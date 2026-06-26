@@ -15,7 +15,7 @@
                         Dashboard
                     </x-nav-link>
                     <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
-                        📅 Jadwal Posting
+                        📅 Jadwal Postings
                     </x-nav-link>
                     <x-nav-link :href="route('caption.generator')" :active="request()->routeIs('caption.generator')">
                         ✨ Buat Caption
